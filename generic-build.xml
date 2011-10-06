@@ -1,0 +1,174 @@
+<?xml version="1.0"?>
+<project name="PROJECT-NAME" default="compile" basedir=".">
+
+    <!--**************************************************-->
+    <!-- Configureable Properties -->
+    <!--**************************************************-->
+
+    <!-- The main class, where public static void main(String... is -->
+    <property name="Main.class" value="package.main"/>
+
+    <!-- The directory where all of the soruce is -->
+    <property name="src.dir" value="./src"/>
+
+    <!-- The directory where all of JUnit test source is -->
+    <property name="test.dir" value="./test"/>
+
+    <!-- The directory where all of the dependencies are -->
+    <property name="lib.dir" value="./lib"/>
+
+    <!-- The directory where the build process places
+         all of the class files and the initial build
+         of the jar -->
+    <property name="build.dir" value="./build"/>
+
+    <!-- The directory that can be distributed -->
+    <property name="dist.dir" value="./dist"/>
+
+    <!-- Name of the jar -->
+    <property name="jar.name" value="${ant.project.name}.jar"/>
+
+    <!-- Distributed jar file -->
+    <property name="dist.jar.file" value="${dist.dir}/${jar.name}"/>
+
+    <!-- The directory where the initial build of the jar is placed -->
+    <property name="jar.dir" value="${build.dir}/jar"/>
+
+    <!-- The name of the jar file -->
+    <property name="jar.file" value="${jar.dir}/${jar.name}"/>
+
+    <!-- The directory to place all of the documentation -->
+    <property name="javadoc.dir" value="doc/"/>
+
+    <!-- The directory where all of the compiled class files go -->
+    <property name="class.dir" value="${build.dir}/classes"/>
+
+    <!-- The directory where all of the test's compiled class files go -->
+    <property name="test.class.dir" value="${build.dir}/test-classes"/>
+
+    <!--Define up the classpath -->
+    <path id="classpath.ref">
+        <pathelement location="${class.dir}"/>
+        <fileset dir="${lib.dir}">
+            <include name="**/*.jar"/>
+        </fileset>
+    </path>
+
+    <!--Define up the classpath for tests -->
+    <path id="test.classpath.ref">
+        <path refid="classpath.ref"/>
+        <pathelement location="${test.class.dir}"/>
+    </path>
+
+    <!-- Clean the project -->
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
+    </target>
+
+    <!-- Compile all of the source -->
+    <target name="compile">
+        <mkdir dir="${class.dir}"/>
+        <javac srcdir="${src.dir}"
+               destdir="${class.dir}"
+               debug="yes"
+               includeAntRuntime="no"
+               classpathref="classpath.ref">
+            <compilerarg value="-Xlint"/>
+        </javac>
+        <!-- Copy resources -->
+        <copy todir="${class.dir}">
+            <fileset dir="${src.dir}"
+                     excludes="**/*.java"/>
+        </copy>
+    </target>
+
+    <!-- Create the jar and handle all of its dependencies -->
+    <target name="jar" depends="compile">
+        <mkdir dir="${jar.dir}"/>
+        
+         <!-- Set up the string for the Class-Path -->
+         <pathconvert property="jar.classpath.string" pathsep=" ">
+             <mapper>
+                 <chainedmapper>
+
+                     <!-- remove absolute path -->
+                     <flattenmapper/>
+
+                     <!-- add lib/ prefix -->
+                     <globmapper from="*" to="${lib.dir}/*"/>
+                 </chainedmapper>
+             </mapper>
+
+             <path>
+                 <!-- lib.home contains all jar files, in several subdirectories -->
+                 <fileset dir="${lib.dir}">
+                     <include name="**/*.jar"/>
+                 </fileset>
+             </path>
+         </pathconvert>
+
+        <jar destfile="${jar.file}" basedir="${class.dir}">
+            <manifest>
+                <attribute name="Main-Class" value="${Main.class}"/>
+                <attribute name="Class-Path" value="${jar.classpath.string}"/>
+            </manifest>
+        </jar>
+        <copy todir="${jar.dir}/${lib.dir}">
+            <!-- We probably don't need junit tests for the build -->
+            <fileset dir="${lib.dir}" excludes="*junit*"/>
+        </copy>
+    </target>
+
+    <!-- Run the project -->
+    <target name="run" depends="jar">
+        <java jar="${jar.file}" fork="true"/>
+    </target>
+
+    <!-- Create the javadoc for the source -->
+    <target name="doc" depends="javadoc"/>
+    <target name="javadoc">
+        <javadoc sourcepath="${src.dir}" destdir="${javadoc.dir}">
+            <link href="http://download.oracle.com/javase/6/docs/api/"/>
+        </javadoc>
+    </target>
+
+    <!-- Compile all of the tests -->
+    <target name="compile-tests" depends="compile">
+        <mkdir dir="${test.class.dir}"/>
+        <javac srcdir="${test.dir}"
+               destdir="${test.class.dir}"
+               debug="yes"
+               includeAntRuntime="no"
+               classpathref="test.classpath.ref">
+            <compilerarg value="-Xlint"/>
+        </javac>
+    </target>
+
+    <!-- Run all of the JUnit test in the test directory -->
+    <target name="test" depends="compile-tests">
+        <junit fork="yes" haltonfailure="yes">
+            <classpath refid="test.classpath.ref"/>
+            <formatter type="plain" usefile="false"/>
+            <batchtest>
+                <fileset dir="${test.class.dir}">
+                    <!-- Ignore all anonymous classes -->
+                    <exclude name="**/*$*"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+    <!-- Distribute the jar, along with its dependencies -->
+
+    <target name="dist" depends="distribute"/>
+    <target name="distribute" depends="jar">
+        <!--<mkdir dir="${dist.dir}"/>-->
+        <copy todir="${dist.dir}">
+            <fileset dir="${jar.dir}"/>
+        </copy>
+        <chmod file="${dist.jar.file}" perm="u+x"/>
+    </target>
+
+</project>
+
