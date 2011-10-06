@@ -32,13 +32,13 @@
 ############################################################
 
 # The name of the program
-PROGRAM_NAME=des
+PROGRAM_NAME=PROGRAM_NAME
 
 # The directory that houses all of the source
 SOURCE_DIR=src
 # the extension on the source files
 # the Makefile will use this to detect all of the source
-SOURCE_EXTENSION=cpp
+SOURCE_EXTENSION=c
 # all of the includes dir, separated by a space
 INCLUDES_DIRS=include
 
@@ -53,16 +53,16 @@ SOURCE_COMPILER=g++
 SOURCE_FLAGS=-c -g -Wall
 
 # compiler for the objects
-OBJECT_COMPILER=g++
+OBJECT_COMPILER=gcc
 # flags for the objects
-OBJECT_FLAGS=
+OBJECT_FLAGS=-pedantic -ansi
 
 ############################################################
 # Nothing below here should be changed
 ############################################################
 
 # all of the source files
-SOURCE=$(wildcard $(SOURCE_DIR)/*.$(SOURCE_EXTENSION))
+SOURCE=$(shell find $(SOURCE_DIR) -name "*.$(SOURCE_EXTENSION)")
 
 # flags for includes
 INCLUDES_FLAGS=$(foreach INCLUDE_DIR,$(INCLUDES_DIRS),-I$(INCLUDE_DIR))
@@ -88,5 +88,6 @@ clean :
 
 # each build file depends on its corresponding source file
 $(BUILD_DIR)/%.$(BUILD_FILE_EXTENSION) : $(SOURCE_DIR)/%.$(SOURCE_EXTENSION)
+	@mkdir -p `dirname $@`
 	$(SOURCE_COMPILER) $(SOURCE_FLAGS) $(INCLUDES_FLAGS) $< -o $@
 
